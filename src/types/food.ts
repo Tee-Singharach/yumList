@@ -21,9 +21,9 @@ export function formatCreatedAt(date: string): string {
 }
 
 export const inputClassName =
-  "w-full rounded-xl border border-orange-200 bg-white px-3 py-2 text-base text-orange-950 outline-none transition placeholder:text-orange-300 focus:border-orange-400 focus:ring-4 focus:ring-orange-100";
+  "w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-base text-stone-700 outline-none transition placeholder:text-stone-400 focus:border-stone-400 focus:ring-4 focus:ring-stone-100";
 
-export const labelClassName = "mb-1 block text-sm font-medium text-orange-900";
+export const labelClassName = "mb-1 block text-sm font-medium text-stone-600";
 
 export function reorderAfterStatusChange(
   items: FoodItem[],

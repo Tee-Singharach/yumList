@@ -5,14 +5,12 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = env("DATABASE_URL")
 }
 
 model Food {
   id        Int      @id @default(autoincrement())
   name      String
-  category  String?
-  status    String   @default("WANT")
+  status    String   @default("NOT_EATEN")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

@@ -1,31 +1,10 @@
 "use client";
 
 import { ClipboardListIcon, ListBulletIcon } from "@/components/icons";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AddFoodForm } from "@/components/yum-list/AddFoodForm";
 import { FoodItemCard } from "@/components/yum-list/FoodItemCard";
 import { FOOD_STATUS_LABEL, reorderAfterStatusChange, sortByEatStatus, type FoodItem, type FoodStatus } from "@/types/food";
-
-const INITIAL_ITEMS: FoodItem[] = [
-  {
-    id: "1",
-    name: "ชาบู",
-    status: "NOT_EATEN",
-    createdAt: "2026-06-10T10:00:00.000Z",
-  },
-  {
-    id: "2",
-    name: "หมูกระทะ",
-    status: "NOT_EATEN",
-    createdAt: "2026-06-12T14:30:00.000Z",
-  },
-  {
-    id: "3",
-    name: "ซูชิ",
-    status: "NOT_EATEN",
-    createdAt: "2026-06-14T09:15:00.000Z",
-  },
-];
 
 type FilterValue = "ALL" | FoodStatus;
 
@@ -36,8 +15,24 @@ const FILTERS: { value: FilterValue; label: string }[] = [
 ];
 
 export function YumListApp() {
-  const [items, setItems] = useState<FoodItem[]>(INITIAL_ITEMS);
+  const [items, setItems] = useState<FoodItem[]>([]);
   const [filter, setFilter] = useState<FilterValue>("ALL");
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadItems() {
+      try {
+        const response = await fetch("/api/foods");
+        if (!response.ok) return;
+        const data: FoodItem[] = await response.json();
+        setItems(data);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadItems();
+  }, []);
 
   const filteredItems = useMemo(() => {
     const sorted = sortByEatStatus(items);
@@ -54,65 +49,85 @@ export function YumListApp() {
     [items],
   );
 
-  function handleAdd(name: string) {
+  async function handleAdd(name: string) {
+    const response = await fetch("/api/foods", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    if (!response.ok) return;
+
+    const newItem: FoodItem = await response.json();
     setItems((current) => {
-      const newItem: FoodItem = {
-        id: crypto.randomUUID(),
-        name,
-        status: "NOT_EATEN",
-        createdAt: new Date().toISOString(),
-      };
       const notEaten = current.filter((item) => item.status === "NOT_EATEN");
       const eaten = current.filter((item) => item.status === "EATEN");
       return [newItem, ...notEaten, ...eaten];
     });
   }
 
-  function handleToggleStatus(id: string) {
-    setItems((current) => {
-      const item = current.find((entry) => entry.id === id);
-      if (!item) return current;
+  async function handleToggleStatus(id: string) {
+    const item = items.find((entry) => entry.id === id);
+    if (!item) return;
 
-      const newStatus = item.status === "NOT_EATEN" ? "EATEN" : "NOT_EATEN";
-      return reorderAfterStatusChange(current, id, newStatus);
+    const newStatus = item.status === "NOT_EATEN" ? "EATEN" : "NOT_EATEN";
+    const response = await fetch(`/api/foods/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
     });
+    if (!response.ok) return;
+
+    const updated: FoodItem = await response.json();
+    setItems((current) => reorderAfterStatusChange(current, id, updated.status));
   }
 
-  function handleEdit(id: string, data: { name: string; status: FoodStatus }) {
-    setItems((current) => {
-      const previous = current.find((item) => item.id === id);
-      if (!previous) return current;
+  async function handleEdit(id: string, data: { name: string; status: FoodStatus }) {
+    const previous = items.find((item) => item.id === id);
+    if (!previous) return;
 
-      const updated = current.map((item) =>
-        item.id === id ? { ...item, ...data } : item,
+    const response = await fetch(`/api/foods/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) return;
+
+    const updated: FoodItem = await response.json();
+    setItems((current) => {
+      if (previous.status === updated.status) {
+        return current.map((item) => (item.id === id ? updated : item));
+      }
+      return reorderAfterStatusChange(
+        current.map((item) => (item.id === id ? updated : item)),
+        id,
+        updated.status,
       );
-
-      if (previous.status === data.status) return updated;
-
-      return reorderAfterStatusChange(updated, id, data.status);
     });
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
+    const response = await fetch(`/api/foods/${id}`, { method: "DELETE" });
+    if (!response.ok) return;
+
     setItems((current) => current.filter((item) => item.id !== id));
   }
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 py-10 sm:px-6 sm:py-14">
       <header className="text-center sm:text-left">
-        <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-orange-100 px-3 py-1 text-sm font-medium text-orange-700">
+        <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-stone-100 px-3 py-1 text-sm font-medium text-stone-600">
           <ListBulletIcon className="h-4 w-4" />
           รายการอาหารที่อยากกิน
         </div>
-        <h1 className="text-4xl font-bold tracking-tight text-orange-950 sm:text-5xl">
-          Yum<span className="text-orange-500">List</span>
+        <h1 className="text-4xl font-bold tracking-tight text-stone-700 sm:text-5xl">
+          Yum<span className="text-amber-600">List</span>
         </h1>
-        <p className="mt-3 max-w-xl text-base leading-relaxed text-orange-800/70 sm:text-lg">
+        <p className="mt-3 max-w-xl text-base leading-relaxed text-stone-500 sm:text-lg">
           จดไว้ว่าอยากกินอะไร พอไปกินแล้วก็มาอัปเดตว่ากินแล้ว
         </p>
       </header>
 
-      <section className="rounded-3xl border border-orange-100 bg-white p-5 shadow-lg shadow-orange-100/60 sm:p-6">
+      <section className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm shadow-stone-200/40 sm:p-6">
         <AddFoodForm onAdd={handleAdd} />
 
         <div className="mt-6 grid grid-cols-3 gap-3">
@@ -124,9 +139,9 @@ export function YumListApp() {
 
       <section>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-orange-950">รายการของคุณ</h2>
+          <h2 className="text-lg font-semibold text-stone-700">รายการของคุณ</h2>
           <div
-            className="inline-flex rounded-2xl bg-orange-50 p-1"
+            className="inline-flex rounded-2xl bg-stone-100 p-1"
             role="tablist"
             aria-label="กรองรายการ"
           >
@@ -139,8 +154,8 @@ export function YumListApp() {
                 onClick={() => setFilter(value)}
                 className={`rounded-xl px-3 py-1.5 text-sm font-medium transition ${
                   filter === value
-                    ? "bg-white text-orange-900 shadow-sm shadow-orange-100"
-                    : "text-orange-600/70 hover:text-orange-800"
+                    ? "bg-white text-stone-700 shadow-sm shadow-stone-200/50"
+                    : "text-stone-500 hover:text-stone-600"
                 }`}
               >
                 {label}
@@ -149,7 +164,11 @@ export function YumListApp() {
           </div>
         </div>
 
-        {filteredItems.length === 0 ? (
+        {isLoading ? (
+          <p className="rounded-3xl border border-dashed border-stone-200 bg-stone-50 px-6 py-14 text-center text-base font-medium text-stone-500">
+            กำลังโหลดรายการ...
+          </p>
+        ) : filteredItems.length === 0 ? (
           <EmptyState filter={filter} />
         ) : (
           <ul className="flex flex-col gap-3">
@@ -180,9 +199,9 @@ function StatCard({
   accent: "white" | "light" | "muted";
 }) {
   const colors = {
-    white: "text-orange-950 bg-white border-orange-100",
-    light: "text-orange-700 bg-orange-50 border-orange-100",
-    muted: "text-orange-600 bg-orange-100/70 border-orange-200",
+    white: "text-stone-700 bg-white border-stone-200",
+    light: "text-stone-600 bg-stone-50 border-stone-200",
+    muted: "text-stone-500 bg-stone-100 border-stone-200",
   }[accent];
 
   return (
@@ -202,11 +221,11 @@ function EmptyState({ filter }: { filter: FilterValue }) {
         : "ยังไม่มีรายการอาหาร เริ่มเพิ่มรายการแรกได้เลย";
 
   return (
-    <div className="rounded-3xl border border-dashed border-orange-200 bg-orange-50/30 px-6 py-14 text-center">
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-100 text-orange-500">
+    <div className="rounded-3xl border border-dashed border-stone-200 bg-stone-50 px-6 py-14 text-center">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-stone-100 text-stone-400">
         <ClipboardListIcon className="h-8 w-8" />
       </div>
-      <p className="mt-4 text-base font-medium text-orange-800/80">{message}</p>
+      <p className="mt-4 text-base font-medium text-stone-500">{message}</p>
     </div>
   );
 }

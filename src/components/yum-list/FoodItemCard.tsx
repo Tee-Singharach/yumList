@@ -60,18 +60,18 @@ export function FoodItemCard({
 
   return (
     <article
-      className={`group rounded-2xl border bg-white p-4 shadow-sm transition hover:shadow-md hover:shadow-orange-100/50 ${
+      className={`group rounded-2xl border bg-white p-4 shadow-sm transition hover:shadow-md hover:shadow-stone-200/40 ${
         isEaten
-          ? "border-orange-200/80 bg-orange-50/30"
-          : "border-orange-100 hover:border-orange-300"
+          ? "border-stone-200 bg-stone-50/50"
+          : "border-stone-200 hover:border-stone-300"
       }`}
     >
       <div className="flex items-start gap-3">
         <span
           className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
             isEaten
-              ? "bg-orange-200/60 text-orange-600"
-              : "bg-orange-100 text-orange-600"
+              ? "bg-stone-200/70 text-stone-500"
+              : "bg-stone-100 text-stone-500"
           }`}
           aria-hidden="true"
         >
@@ -81,11 +81,11 @@ export function FoodItemCard({
         <div className="min-w-0 flex-1">
           {isEditing ? (
             <div className="flex flex-col gap-3">
-              <p className="text-sm font-semibold text-orange-950">แก้ไขรายการอาหาร</p>
+              <p className="text-sm font-semibold text-stone-700">แก้ไขรายการอาหาร</p>
 
               <div>
                 <label htmlFor={`edit-name-${item.id}`} className={labelClassName}>
-                  ชื่ออาหาร <span className="text-orange-500">*</span>
+                  ชื่ออาหาร <span className="text-amber-600">*</span>
                 </label>
                 <input
                   id={`edit-name-${item.id}`}
@@ -119,14 +119,14 @@ export function FoodItemCard({
                   type="button"
                   onClick={handleSaveEdit}
                   disabled={!editName.trim()}
-                  className="rounded-lg bg-orange-500 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-orange-600 disabled:opacity-50"
+                  className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-amber-700 disabled:opacity-50"
                 >
                   บันทึก
                 </button>
                 <button
                   type="button"
                   onClick={handleCancelEdit}
-                  className="rounded-lg px-3 py-1.5 text-sm font-medium text-orange-700 transition hover:bg-orange-50"
+                  className="rounded-lg px-3 py-1.5 text-sm font-medium text-stone-600 transition hover:bg-stone-100"
                 >
                   ยกเลิก
                 </button>
@@ -138,8 +138,8 @@ export function FoodItemCard({
                 <h3
                   className={`text-lg font-semibold ${
                     isEaten
-                      ? "text-orange-400 line-through decoration-orange-200"
-                      : "text-orange-950"
+                      ? "text-stone-400 line-through decoration-stone-300"
+                      : "text-stone-700"
                   }`}
                 >
                   {item.name}
@@ -161,7 +161,7 @@ export function FoodItemCard({
       </div>
 
       {!isEditing && (
-        <div className="mt-4 flex flex-wrap gap-2 border-t border-orange-100 pt-3">
+        <div className="mt-4 flex flex-wrap gap-2 border-t border-stone-100 pt-3">
           <ActionButton
             onClick={() => onToggleStatus(item.id)}
             variant={isEaten ? "secondary" : "primary"}
@@ -190,9 +190,9 @@ function MetaItem({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl bg-orange-50/60 px-3 py-2">
-      <dt className="text-xs font-medium text-orange-600/70">{label}</dt>
-      <dd className="mt-0.5 flex items-center gap-1.5 font-medium text-orange-900">
+    <div className="rounded-xl bg-stone-50 px-3 py-2">
+      <dt className="text-xs font-medium text-stone-400">{label}</dt>
+      <dd className="mt-0.5 flex items-center gap-1.5 font-medium text-stone-600">
         {icon}
         {value}
       </dd>
@@ -207,8 +207,8 @@ function StatusBadge({ status }: { status: FoodStatus }) {
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
         isEaten
-          ? "bg-orange-200/70 text-orange-700"
-          : "bg-orange-100 text-orange-700"
+          ? "bg-stone-200/80 text-stone-600"
+          : "bg-amber-50 text-amber-800"
       }`}
     >
       {FOOD_STATUS_LABEL[status]}
@@ -227,10 +227,10 @@ function ActionButton({
 }) {
   const styles = {
     primary:
-      "bg-orange-500 text-white hover:bg-orange-600 shadow-sm shadow-orange-200",
-    secondary: "bg-orange-100 text-orange-700 hover:bg-orange-200",
-    ghost: "bg-orange-50 text-orange-800 hover:bg-orange-100",
-    danger: "bg-orange-50 text-orange-600 hover:bg-orange-100 border border-orange-200",
+      "bg-amber-600 text-white hover:bg-amber-700 shadow-sm shadow-stone-200/50",
+    secondary: "bg-stone-100 text-stone-600 hover:bg-stone-200",
+    ghost: "bg-stone-50 text-stone-600 hover:bg-stone-100",
+    danger: "bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200/80",
   }[variant];
 
   return (
