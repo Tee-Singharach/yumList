@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarIcon, CakeIcon, CheckCircleIcon } from "@/components/icons";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useState } from "react";
 import {
   FOOD_STATUS_LABEL,
@@ -18,10 +19,12 @@ type FoodItemEditData = {
 
 type FoodItemCardProps = {
   item: FoodItem;
-  onToggleStatus: (id: string) => void;
-  onEdit: (id: string, data: FoodItemEditData) => void;
-  onDelete: (id: string) => void;
+  onToggleStatus: (id: string) => void | Promise<void>;
+  onEdit: (id: string, data: FoodItemEditData) => boolean | Promise<boolean>;
+  onDelete: (id: string) => boolean | Promise<boolean>;
 };
+
+type ConfirmAction = "delete" | "edit" | null;
 
 export function FoodItemCard({
   item,
@@ -32,24 +35,78 @@ export function FoodItemCard({
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(item.name);
   const [editStatus, setEditStatus] = useState<FoodStatus>(item.status);
+  const [isSaving, setIsSaving] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
 
   const isEaten = item.status === "EATEN";
 
   function handleStartEdit() {
     setEditName(item.name);
     setEditStatus(item.status);
+    setConfirmError(null);
     setIsEditing(true);
   }
 
-  function handleSaveEdit() {
+  function handleRequestSave() {
     const trimmedName = editName.trim();
     if (!trimmedName) return;
 
-    onEdit(item.id, {
-      name: trimmedName,
-      status: editStatus,
-    });
-    setIsEditing(false);
+    const nameChanged = trimmedName !== item.name;
+    const statusChanged = editStatus !== item.status;
+
+    if (!nameChanged && !statusChanged) {
+      setIsEditing(false);
+      return;
+    }
+
+    setConfirmError(null);
+    setConfirmAction("edit");
+  }
+
+  async function handleConfirmEdit() {
+    const trimmedName = editName.trim();
+    if (!trimmedName) return;
+
+    setIsSaving(true);
+    setConfirmError(null);
+
+    try {
+      const saved = await onEdit(item.id, {
+        name: trimmedName,
+        status: editStatus,
+      });
+      if (saved === false) {
+        setConfirmError("บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง");
+        return;
+      }
+      setConfirmAction(null);
+      setIsEditing(false);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleConfirmDelete() {
+    setIsSaving(true);
+    setConfirmError(null);
+
+    try {
+      const deleted = await onDelete(item.id);
+      if (deleted === false) {
+        setConfirmError("ลบไม่สำเร็จ ลองใหม่อีกครั้ง");
+        return;
+      }
+      setConfirmAction(null);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  function handleCloseConfirm() {
+    if (isSaving) return;
+    setConfirmAction(null);
+    setConfirmError(null);
   }
 
   function handleCancelEdit() {
@@ -58,7 +115,12 @@ export function FoodItemCard({
     setIsEditing(false);
   }
 
+  const trimmedEditName = editName.trim();
+  const nameChanged = trimmedEditName !== item.name;
+  const statusChanged = editStatus !== item.status;
+
   return (
+    <>
     <article
       className={`group rounded-2xl border bg-white p-4 shadow-sm transition hover:shadow-md hover:shadow-stone-200/40 ${
         isEaten
@@ -117,7 +179,7 @@ export function FoodItemCard({
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={handleSaveEdit}
+                  onClick={handleRequestSave}
                   disabled={!editName.trim()}
                   className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-amber-700 disabled:opacity-50"
                 >
@@ -171,12 +233,72 @@ export function FoodItemCard({
           <ActionButton onClick={handleStartEdit} variant="ghost">
             แก้ไข
           </ActionButton>
-          <ActionButton onClick={() => onDelete(item.id)} variant="danger">
+          <ActionButton
+            onClick={() => {
+              setConfirmError(null);
+              setConfirmAction("delete");
+            }}
+            variant="danger"
+          >
             ลบ
           </ActionButton>
         </div>
       )}
     </article>
+
+    <ConfirmModal
+      open={confirmAction === "delete"}
+      title="ยืนยันการลบ"
+      confirmLabel="ลบรายการ"
+      confirmVariant="danger"
+      isLoading={isSaving}
+      onConfirm={handleConfirmDelete}
+      onCancel={handleCloseConfirm}
+    >
+      <p>
+        ต้องการลบ <span className="font-medium text-stone-700">&quot;{item.name}&quot;</span>{" "}
+        ออกจากรายการหรือไม่?
+      </p>
+      <p className="mt-2">การลบนี้ไม่สามารถย้อนกลับได้</p>
+      {confirmError ? (
+        <p className="mt-3 text-sm text-rose-600">{confirmError}</p>
+      ) : null}
+    </ConfirmModal>
+
+    <ConfirmModal
+      open={confirmAction === "edit"}
+      title="ยืนยันการแก้ไข"
+      confirmLabel="บันทึกการเปลี่ยนแปลง"
+      isLoading={isSaving}
+      onConfirm={handleConfirmEdit}
+      onCancel={handleCloseConfirm}
+    >
+      <p>ต้องการบันทึกการเปลี่ยนแปลงนี้หรือไม่?</p>
+      <ul className="mt-3 space-y-2 rounded-xl bg-stone-50 px-3 py-2.5">
+        {nameChanged ? (
+          <li>
+            <span className="text-stone-400">ชื่ออาหาร: </span>
+            <span className="text-stone-500 line-through">{item.name}</span>
+            <span className="text-stone-400"> → </span>
+            <span className="font-medium text-stone-700">{trimmedEditName}</span>
+          </li>
+        ) : null}
+        {statusChanged ? (
+          <li>
+            <span className="text-stone-400">สถานะ: </span>
+            <span className="text-stone-500">{FOOD_STATUS_LABEL[item.status]}</span>
+            <span className="text-stone-400"> → </span>
+            <span className="font-medium text-stone-700">
+              {FOOD_STATUS_LABEL[editStatus]}
+            </span>
+          </li>
+        ) : null}
+      </ul>
+      {confirmError ? (
+        <p className="mt-3 text-sm text-rose-600">{confirmError}</p>
+      ) : null}
+    </ConfirmModal>
+    </>
   );
 }
 

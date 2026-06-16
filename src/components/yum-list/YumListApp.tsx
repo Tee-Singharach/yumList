@@ -83,14 +83,14 @@ export function YumListApp() {
 
   async function handleEdit(id: string, data: { name: string; status: FoodStatus }) {
     const previous = items.find((item) => item.id === id);
-    if (!previous) return;
+    if (!previous) return false;
 
     const response = await fetch(`/api/foods/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (!response.ok) return;
+    if (!response.ok) return false;
 
     const updated: FoodItem = await response.json();
     setItems((current) => {
@@ -103,13 +103,15 @@ export function YumListApp() {
         updated.status,
       );
     });
+    return true;
   }
 
   async function handleDelete(id: string) {
     const response = await fetch(`/api/foods/${id}`, { method: "DELETE" });
-    if (!response.ok) return;
+    if (!response.ok) return false;
 
     setItems((current) => current.filter((item) => item.id !== id));
+    return true;
   }
 
   return (
