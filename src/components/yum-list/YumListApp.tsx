@@ -1,7 +1,7 @@
 "use client";
 
 import { ClipboardListIcon, ListBulletIcon } from "@/components/icons";
-import { Toast } from "@/components/ui/Toast";
+import { Toast, type ToastState, type ToastVariant } from "@/components/ui/Toast";
 import { useEffect, useMemo, useState } from "react";
 import { AddFoodForm } from "@/components/yum-list/AddFoodForm";
 import { FoodItemCard } from "@/components/yum-list/FoodItemCard";
@@ -19,7 +19,7 @@ export function YumListApp() {
   const [items, setItems] = useState<FoodItem[]>([]);
   const [filter, setFilter] = useState<FilterValue>("ALL");
   const [isLoading, setIsLoading] = useState(true);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastState>(null);
 
   useEffect(() => {
     if (!toast) return;
@@ -27,8 +27,8 @@ export function YumListApp() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  function showToast(message: string) {
-    setToast(message);
+  function showToast(message: string, variant: ToastVariant) {
+    setToast({ message, variant });
   }
 
   useEffect(() => {
@@ -115,7 +115,7 @@ export function YumListApp() {
         updated.status,
       );
     });
-    showToast("แก้ไขรายการแล้ว");
+    showToast("แก้ไขรายการแล้ว", "edit");
     return true;
   }
 
@@ -127,6 +127,7 @@ export function YumListApp() {
     setItems((current) => current.filter((item) => item.id !== id));
     showToast(
       deletedItem ? `ลบ "${deletedItem.name}" แล้ว` : "ลบรายการแล้ว",
+      "delete",
     );
     return true;
   }
@@ -207,7 +208,7 @@ export function YumListApp() {
       </section>
     </div>
 
-    <Toast message={toast} onClose={() => setToast(null)} />
+    <Toast toast={toast} onClose={() => setToast(null)} />
     </>
   );
 }

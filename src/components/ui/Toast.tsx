@@ -1,29 +1,58 @@
 "use client";
 
+export type ToastVariant = "edit" | "delete";
+
+export type ToastState = {
+  message: string;
+  variant: ToastVariant;
+} | null;
+
 type ToastProps = {
-  message: string | null;
+  toast: ToastState;
   onClose: () => void;
 };
 
-export function Toast({ message, onClose }: ToastProps) {
-  if (!message) return null;
+const variantStyles: Record<
+  ToastVariant,
+  { container: string; icon: string; text: string }
+> = {
+  edit: {
+    container: "border-amber-200 bg-amber-50 shadow-amber-200/40",
+    icon: "bg-amber-100 text-amber-600",
+    text: "text-amber-900",
+  },
+  delete: {
+    container: "border-rose-200 bg-rose-50 shadow-rose-200/40",
+    icon: "bg-rose-100 text-rose-600",
+    text: "text-rose-900",
+  },
+};
+
+export function Toast({ toast, onClose }: ToastProps) {
+  if (!toast) return null;
+
+  const styles = variantStyles[toast.variant];
 
   return (
     <div
       role="status"
       aria-live="polite"
-      className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2"
+      className="fixed right-4 bottom-4 z-50 sm:right-6 sm:bottom-6"
     >
-      <div className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-3 shadow-lg shadow-stone-300/30">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+      <div
+        className={`flex max-w-sm items-center gap-3 rounded-2xl border px-4 py-3 shadow-lg ${styles.container}`}
+      >
+        <span
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${styles.icon}`}
+        >
           <CheckIcon />
         </span>
-        <p className="text-sm font-medium text-stone-700">{message}</p>
+        <p className={`text-sm font-medium ${styles.text}`}>{toast.message}</p>
         <button
           type="button"
           onClick={onClose}
           aria-label="ปิดการแจ้งเตือน"
-          className="ml-1 rounded-lg p-1 text-stone-400 transition hover:bg-stone-100 hover:text-stone-600"
+          className="ml-1 rounded-lg p-1 text-stone-400 transition hover:bg-white/60 hover:text-stone-600"
         >
           <CloseIcon />
         </button>
